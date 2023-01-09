@@ -1,0 +1,44 @@
+{
+  "name": "express-auth-microservice-example",
+  "version": "1.0.0",
+  "description": "Example project of an Express server used as a microservice to authenticate users.",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "jest --detectOpenHandles",
+    "test-ci": "jest --detectOpenHandles --ci --reporters='default' --reporters='./tests/GithubActionReporter'",
+    "start": "NODE_ENV=production node src/index.js",
+    "dev": "CHOKIDAR_USEPOLLING=true NODE_ENV=development PORT=3030 nodemon src/index.js",
+    "seed": "NODE_ENV=development node src/seed.js",
+    "wipe-and-seed": "WIPE=true NODE_ENV=development node src/seed.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlexHolderDeveloper/Express-Auth-Microservice-Example.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/AlexHolderDeveloper/Express-Auth-Microservice-Example/issues"
+  },
+  "homepage": "https://github.com/AlexHolderDeveloper/Express-Auth-Microservice-Example#readme",
+  "dependencies": {
+    "bcrypt": "^5.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "express-rate-limit": "^6.7.0",
+    "express-validator": "^6.14.2",
+    "helmet": "^6.0.1",
+    "jsonwebtoken": "^9.0.0",
+    "mongoose": "^6.8.3",
+    "morgan": "^1.10.0",
+    "postmark": "^3.0.15",
+    "validator": "^13.7.0"
+  },
+  "devDependencies": {
+    "jest": "^29.3.1",
+    "nodemon": "^2.0.20",
+    "supertest": "^6.3.3"
+  }
+}
