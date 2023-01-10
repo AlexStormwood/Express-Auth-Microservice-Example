@@ -115,11 +115,25 @@ async function createUser(email, password){
  * Calls various validation middleware before saving to the database.
  * Will return the modified user record on success, or an error on failure.
  * @param {string} validJwt A valid JWT to authenticate the user's action to modify data. Should be short-lived for safety purposes.
+ * @param {string} userId A sanity check - this ID must match the ID given in the validJwt.
  * @param {object} updateObj Key-value pair where the key is the property to update, and the value is the new value.
  * @returns {object} The user record that now has the updateObj data applied to it.
  */
-async function updateUser(validJwt, updateObj){
-    let modifiedUser = {};
+async function updateUser(validJwt, userId, updateObj){
+    let decodedJwt = decodeJwtShortLived(validJwt);
+    if (decodedJwt._id != userId){
+        throw new Error("Invalid user token for this operation.");
+    }
+    // Validation is not run by default during update operations
+    // And we don't want it to -- "this" refers to something other than the modified doc during updates.
+    let modifiedUser = await User.findByIdAndUpdate(userId, updateObj, {returnDocument: 'after'}).exec();
+    // So, validate after the data has been applied. Not the safest thing, sure, but still...
+    try { 
+        await modifiedUser.validate();
+    } catch (error) {
+        console.log("Error validating the modified User data;\n" + error);
+        throw error;
+    }
 
     return modifiedUser;
 }
@@ -129,11 +143,17 @@ async function updateUser(validJwt, updateObj){
  * If that condition is met, the user will be deleted.
  * @param {string} validJwt A valid JWT to authenticate the user's action to modify data. Should be short-lived for safety purposes.
  * @param {string} userId A sanity check - this ID must match the ID given in the validJwt.
- * @returns Boolean. True on successful delete, false on an error.
+ * @returns Object. Last copy of the user data that was deleted.
  */
 async function deleteUser(validJwt, userId){
-    let deletedUser = {};
 
+    let decodedJwt = decodeJwtShortLived(validJwt);
+    if (decodedJwt._id != userId){
+        throw new Error("Invalid user token for this operation.");
+    }
+
+    let deletedUser = await User.findByIdAndDelete(userId).exec();
+    console.log("User deleted, here is one last look at their data:\n" + JSON.stringify(deletedUser));
     return deletedUser;
 }
 
@@ -156,16 +176,16 @@ async function findOrAssignUserViaOauthProviderId(userJwt, providerName, profile
         return false;
     });
     if (oauthConnection){
-        // BigfootDS account has a Twitch profile integration
-        // Check if it's the same Twitch account just used to log in...
+        // Auth account already have an OAuth profile integration
+        // Check if it's the same OAuth account just used to log in...
         if (oauthConnection.profileId != profileId) {
-            throw new Error("Account already connected to a different profile from this OAuth provider. Please double-check account settings in both that OAuth provider and BigfootDS!");
+            throw new Error("Account already connected to a different profile from this OAuth provider. Please double-check account settings in both that OAuth provider and the API!");
         } else {
             // Do nothing, JWT is made outside of this if-else nested chain.
         }
     
     } else {
-        // The BigfootDS account does NOT have an 
+        // The auth account does NOT have an 
         // OAuth profile integration for this OAuth provider,
         // so let's create one!
         existingUser.OAuthUsers.push({
@@ -185,10 +205,46 @@ async function findOrAssignUserViaOauthProviderId(userJwt, providerName, profile
 }
 
 
+/**
+ * This function does not return anything - the idea is that you call it with a token and wait for it to either throw an error or finish. 
+ * If it finishes with no error, then you would assume the user email address has been verified.
+ * @param {string} verificationToken Token gathered from a route param as per the email verification flow.
+ */
+async function verifyUserEmail(verificationToken){
+    let matchingToken = await Token.findOneAndDelete(
+        {
+            randomToken: verificationToken, 
+            tokenType:"email-verification"
+        }
+    ).exec();
+
+    if (!matchingToken) {
+        throw new Error("Invalid verification token.");
+    }
+
+    console.log(`Found token and deleted it:\n${JSON.stringify(matchingToken)}`);
+
+    let tokenUser = await User.findOne({_id: matchingToken.userId}).exec();        
+    if (!tokenUser){
+        throw new Error("Invalid verification token user.");
+    }
+
+    console.log(`Retrieved user with ID: ${tokenUser.id}`);
+
+    try {
+        tokenUser.isEmailVerified = true;
+        await tokenUser.save();
+    } catch (error){
+        throw new Error("Something went wrong verifying a user:\n"+error);
+    }
+
+    console.log(`User ID ${tokenUser.id} has verified their email!`);
+}
 
 
 module.exports = {
     getAllUsers, getUserById, getUserByEmail,
-    createUser,
+    createUser, updateUser, deleteUser,
     findOrAssignUserViaOauthProviderId,
+    verifyUserEmail
 }
