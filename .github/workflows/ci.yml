@@ -1,0 +1,66 @@
+# Nice label for when you view the action results in the GitHub repo's "Actions" tab.
+name: ExpressJS Server Testing
+
+# Run this action on every push and PR made in the project's main branch.
+# If you use a proper branching and merging git workflow,
+# this means you should only commit to main or merge to main when
+# you expect things to work AND want to deploy your work to production.
+# on: 
+#   push:
+#     branches: [ main ]
+#   pull_request:
+#     branches: [ main ]
+
+# For the sake of making sure this workflow is here for you to see but
+# doesn't actually run, we have it set to only trigger manually.
+on: workflow_dispatch
+
+
+# Configure 2 jobs:
+#   - one is running tests
+#   - second is triggering the deployment action if all tests passed
+jobs:
+  run_server_tests:
+    name: Run server tests 
+    # This action runs on Ubuntu/Linux. No Windows hassle or Mac hassle.
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout a copy of the repo.
+    - uses: actions/checkout@v3
+
+    # Configure Node.
+    - name: Test on Node.js '18.x'
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+
+    # Install project dependencies.
+    - run: npm install
+
+    # This is a hack to get MongoDB available within the test environment.
+    # If you don't do this, you need to tell your app to connect to cloud-hosted database
+    # and set up a test DB connection URL.
+    - name: Setup MongoDB in Action
+      uses: supercharge/mongodb-github-action@1.2.0
+      with:
+        mongodb-version: 5
+
+    # Now that everything in the test environment is configured,
+    # run the test command specified in package.json.
+    - name: Run tests
+      run: npm run test-ci
+      env:
+        CI: true
+
+  # Needs "run_server_tests" to finish successfully
+  # and then the deployment workflow will be triggered.
+  # Important! Make sure "secrets:inherit" is set,
+  # otherwise the deployment step will have no .env variables to read.
+  call_cicd_workflow:
+    needs: run_server_tests
+    name: Call the CD workflow
+    uses: ./.github/workflows/cd.yml
+    with:
+      example_data_passed_along: Example string
+    secrets: inherit

@@ -1,0 +1,77 @@
+# Nice label for when you view the action results in the GitHub repo's "Actions" tab.
+name: Deploy the project
+
+# on: 
+#   # This action can only be triggered by being called from another action.
+#   # The caller must provider some inputs - but in this workflow, this is just as an example.
+#   workflow_call:
+#     inputs:
+#       example_data_passed_along:
+#         required: true
+#         type: string
+
+
+# For the sake of making sure this workflow is here for you to see but
+# doesn't actually run, we have it set to only trigger manually.
+on: workflow_dispatch
+
+
+jobs:
+  setup-build-publish-deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+    # Clone a copy of the project into the action environment.
+    # Yes, even though this action was triggered by another action that already did this;
+    # each action is its own separate environment and so a checkout must be done again.
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Authenticate gcloud
+      # credentials_json is not fully recommended, 
+      # but the key thing that this step must do is authenticate this action in GCP.
+      # Read more here: https://github.com/google-github-actions/auth
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+    - id: 'deploy'
+      name: 'Build and deploy image to GCR'
+      uses: 'google-github-actions/deploy-cloudrun@v1'
+      with:
+          # Some Google Cloud config must set up as repository secrets or organization secrets in this page:
+          # https://github.com/<UserOrOrgName>/<RepoName>/settings/secrets/actions
+          # Service name should match whatever you created under Cloud Run in the GCP web dashboard
+          # https://console.cloud.google.com/run
+          # One service should be one web server, and you can configure a service to run on multiple domains
+          service: ${{ secrets.GCR_SERVICE_NAME }}
+
+          # Region is where your service deployment is hosted. Should be us-central1 or some other free/low-cost to keep costs low.
+          # Deployment location affects latency but not as much as poorly-written database queries! 
+          # If you're not deploying a videogame dedicated server, stick to the free/cheap regions!
+          region: ${{ secrets.GCR_SERVICE_REGION }}
+
+          # If you already compiled a Docker image, don't use the "source" option. 
+          # Using "source" is an awesome lazy way to tell Cloud Run to turn our project into a Docker image.
+          # Compare "image" and "source" inputs here: https://github.com/google-github-actions/deploy-cloudrun#inputs
+          source: ./
+
+          # The GitHub repo needs all .env variables set up as repository secrets or organization secrets in this page:
+          # https://github.com/<UserOrOrgName>/<RepoName>/settings/secrets/actions
+          env_vars: |
+            DISCORD_CLIENT_ID=${{secrets.DISCORD_CLIENT_ID}}
+            DISCORD_CLIENT_SECRET=${{secrets.DISCORD_CLIENT_SECRET}}
+            OAUTH_REDIRECT_DISCORD=${{secrets.OAUTH_REDIRECT_DISCORD}}
+            OAUTH_REDIRECT_DISCORD_DEV=${{secrets.OAUTH_REDIRECT_DISCORD_DEV}}
+            TWITCH_CLIENT_ID=${{secrets.TWITCH_CLIENT_ID}}
+            TWITCH_CLIENT_SECRET=${{secrets.TWITCH_CLIENT_SECRET}}
+            OAUTH_REDIRECT_TWITCH=${{secrets.OAUTH_REDIRECT_TWITCH}}
+            OAUTH_REDIRECT_TWITCH_DEV=${{secrets.OAUTH_REDIRECT_TWITCH_DEV}}
+            DATABASE_URL=${{secrets.DATABASE_URL}}
+            NOREPLY_EMAIL_ADDRESS=${{secrets.NOREPLY_EMAIL_ADDRESS}}
+            POSTMARK_API_TOKEN=${{secrets.POSTMARK_API_TOKEN}}
+
+    # Literally just print the URL for any Actions debugging, not at all necessary for deployment.
+    - name: 'Use output'
+      run: 'curl "${{ steps.deploy.outputs.url }}"'

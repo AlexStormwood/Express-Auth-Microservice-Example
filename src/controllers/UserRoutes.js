@@ -1,7 +1,6 @@
 const querystring = require('node:querystring');
 const express = require('express');
 const router = express.Router();
-const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 
@@ -9,16 +8,20 @@ const {
     generateJwtLongLived, generateJwtShortLived,
     refreshJwtLongLived, refreshJwtShortLived,
     decodeJwtLongLived, decodeJwtShortLived,
-    routeRequiresLongLivedJwtHeader, routeRequiresShortLivedJwtHeader,
-    routeRequiresLongLivedJwtParam, routeRequiresShortLivedJwtParam, generateJwtsForUser, 
+    generateJwtsForUser, 
     createTvLoginToken, verifyTvLoginToken
 } = require('./functions/AuthFunctions');
 const { verifyUserEmail, findOrAssignUserViaOauthProviderId } = require('./functions/UserFunctions');
+const { 
+	parseUserSignup, parseUserLogin,
+	routeRequiresLongLivedJwtHeader, routeRequiresShortLivedJwtHeader,
+	routeRequiresLongLivedJwtParam, routeRequiresShortLivedJwtParam
+} = require('./middleware/AuthMiddleware');
 
 router.post('/signup',
     body('email').isEmail().withMessage("Must be a valid email address."),
     body('password').isLength({ min: 8 }).withMessage("Must be a strong password."),
-    passport.authenticate('signup', {session: false}),
+    parseUserSignup,
     async (request, response, next) => {
         console.log("Signing up")
         response.json({
@@ -30,34 +33,14 @@ router.post('/signup',
 );
 
 router.post('/login',
-    async (request, response, next) => {
-        passport.authenticate(
-            'login',
-            async (error, user, info) => {
-                try {
-                    if (error || !user) {
-                        let newError = new Error(error?.message || "An issue occured logging you in. Please try again later.");
-                        newError.status = 400;
-                        return next(newError);
-                    }
-                    request.login(
-                        user,
-                        {session: false},
-                        async (error) => {
-                            if (error) return next (error);
-
-                            return response.json({
-                                tokens: generateJwtsForUser(user)
-                            });
-                        }
-                    );
-
-                } catch (error) {
-                    return next(error);
-                }
-            }
-        // what is this syntax??
-        )(request, response, next)
+    parseUserLogin,
+	async (request, response, next) => {
+        console.log("Signing up")
+        response.json({
+            message: request.message,
+            user: request.user,
+            tokens: generateJwtsForUser(request.user)
+        })
     }
 );
 
@@ -176,6 +159,7 @@ router.get(
                 : 
                 process.env.OAUTH_REDIRECT_DISCORD_DEV
         }
+		// Use a native querystring module to convert objects into correctly-formatted strings.
         response.redirect(`https://discord.com/oauth2/authorize?${querystring.stringify(queryObj)}`)
     }
 )
@@ -243,6 +227,7 @@ router.get(
                 : 
                 process.env.OAUTH_REDIRECT_TWITCH_DEV
         }
+		// Use a native querystring module to convert objects into correctly-formatted strings.
         response.redirect(`https://id.twitch.tv/oauth2/authorize?${querystring.stringify(queryObj)}`)
     }
 );

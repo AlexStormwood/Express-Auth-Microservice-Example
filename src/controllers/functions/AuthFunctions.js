@@ -137,7 +137,5 @@ module.exports = {
     generateJwtLongLived, generateJwtShortLived, generateJwtsForUser, 
     refreshJwtLongLived, refreshJwtShortLived,
     decodeJwtLongLived, decodeJwtShortLived,
-    routeRequiresLongLivedJwtHeader, routeRequiresShortLivedJwtHeader,
-    routeRequiresLongLivedJwtParam, routeRequiresShortLivedJwtParam,
     createTvLoginToken, verifyTvLoginToken
 };

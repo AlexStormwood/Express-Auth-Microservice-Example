@@ -2,8 +2,8 @@ const validator = require('validator');
 
 const {User} = require('../../models/User');
 const {Token} = require('../../models/Token');
-const { decodeJwtShortLived, generateJwtLongLived, generateJwtShortLived } = require('../Authentication/AuthFunctions');
-const { sendUserVerificationEmail } = require('../Emails/EmailFunctions');
+const { decodeJwtShortLived, generateJwtLongLived, generateJwtShortLived } = require('./AuthFunctions');
+const { sendUserVerificationEmail } = require('./EmailFunctions');
 
 /**
  * Retrieve all users in the database.

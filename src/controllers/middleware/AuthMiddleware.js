@@ -144,3 +144,10 @@ const routeRequiresShortLivedJwtParam = function (request, response, next) {
         next();
     })(request, response, next);
 }
+
+
+module.exports = {
+	parseUserSignup, parseUserLogin,
+	routeRequiresLongLivedJwtHeader, routeRequiresShortLivedJwtHeader,
+	routeRequiresLongLivedJwtParam, routeRequiresShortLivedJwtParam
+}

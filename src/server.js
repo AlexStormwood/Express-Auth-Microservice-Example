@@ -146,7 +146,7 @@ app.get("/databaseHealth", (request, response) => {
 
 
 // Import and mount any routers:
-const usersController = require('./controllers/Users/UserRoutes');
+const usersController = require('./controllers/UserRoutes');
 app.use('/users', usersController);
 
 
