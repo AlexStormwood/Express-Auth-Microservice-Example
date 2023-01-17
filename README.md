@@ -55,7 +55,6 @@ For additional data like a user profile or blog post, additional servers should 
 	- routeRequiresLongLivedJwtParam - needs to be rewritten to not use PassportJS
 - `src/controllers/functions/AuthFunctions.js`
 	- createTvLoginToken function should send the token to the user via email, not return the token as part of of the request/response flow.
-	- move createTvLoginToken and verifyTvLoginToken to `src/controllers/middleware/AuthMiddleware.js`
 - `/README.md`
 	- include info about Postmark / the email functionality
 	- explain the server testing

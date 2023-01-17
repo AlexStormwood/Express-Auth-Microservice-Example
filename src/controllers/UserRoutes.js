@@ -3,19 +3,18 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
-
 const {
     generateJwtLongLived, generateJwtShortLived,
     refreshJwtLongLived, refreshJwtShortLived,
     decodeJwtLongLived, decodeJwtShortLived,
-    generateJwtsForUser, 
-    createTvLoginToken, verifyTvLoginToken
+    generateJwtsForUser
 } = require('./functions/AuthFunctions');
 const { verifyUserEmail, findOrAssignUserViaOauthProviderId } = require('./functions/UserFunctions');
 const { 
 	parseUserSignup, parseUserLogin,
 	routeRequiresLongLivedJwtHeader, routeRequiresShortLivedJwtHeader,
-	routeRequiresLongLivedJwtParam, routeRequiresShortLivedJwtParam
+	routeRequiresLongLivedJwtParam, routeRequiresShortLivedJwtParam, 
+    createTvLoginToken, verifyTvLoginToken
 } = require('./middleware/AuthMiddleware');
 
 router.post('/signup',

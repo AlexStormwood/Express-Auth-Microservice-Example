@@ -1,11 +1,5 @@
 const { validationResult } = require('express-validator');
 const jwt = require('jsonwebtoken');
-const { Token } = require('../../models/Token');
-const {User} = require('../../models/User');
-const { createUser } = require('./UserFunctions');
-
-
-
 
 /**
  * Creates a JWT with a 30-day expiry based on given user details.
@@ -66,8 +60,6 @@ const generateJwtsForUser = function (userObj){
     };
 }
 
-
-
 /**
  * Verifies and parses a given JWT to return its payload data as an object.
  * @param {string} userJwt A valid JWT representing a user.
@@ -96,46 +88,8 @@ const decodeJwtShortLived = (userJwt) => {
     }
 }
 
-
-
-const createTvLoginToken = async (request, response, next) => {
-    if (!request.user){
-        next(new Error("No user available to generate a TV token for."));
-    }
-
-    let newTvToken = await Token.create({userId: request.user._id, tokenType: 'tv-login'});
-    console.log(`Created TV login token for user: ${JSON.stringify(newTvToken)}`);
-    request.newTvCode = newTvToken.randomToken;
-    next();
-}
-
-const verifyTvLoginToken = async (request, response, next) => {
-    let providedTvCode = request.params.code;
-
-    let matchingToken = await Token.findOneAndDelete({tokenType:'tv-login', randomToken: providedTvCode}).exec();
-    if (!matchingToken) {
-        next(new Error("Invalid code provided."));
-    }
-
-    let matchingUser = await User.findById(matchingToken.userId).exec();
-    if (!matchingUser){
-        next(new Error("No user found for that code."));
-    }
-
-    request.user = {
-        "_id":matchingUser._id,
-        "email":matchingUser.email,
-        "isEmailVerified":matchingUser.isEmailVerified
-    };
-    request.tokens = generateJwtsForUser(matchingUser);
-    next();
-}
-
-
-
 module.exports = {
     generateJwtLongLived, generateJwtShortLived, generateJwtsForUser, 
     refreshJwtLongLived, refreshJwtShortLived,
-    decodeJwtLongLived, decodeJwtShortLived,
-    createTvLoginToken, verifyTvLoginToken
+    decodeJwtLongLived, decodeJwtShortLived
 };

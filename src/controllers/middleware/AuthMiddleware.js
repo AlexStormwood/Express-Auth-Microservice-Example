@@ -1,7 +1,13 @@
-const { User } = require("../../models/User");
 const { decodeJwtLongLived, decodeJwtShortLived } = require("../functions/AuthFunctions");
+const { Token } = require('../../models/Token');
+const { User } = require('../../models/User');
+const { createUser } = require('../functions/UserFunctions');
 
-
+/**
+ * Middleware function that creates a new user based on provided request body data.
+ * The request body should be raw JSON that includes an "email" and a "password" property.
+ * This function attaches the new user document to the request, as well as a message for debugging.
+ */
 async function parseUserSignup(request, response, next) {
     const errors = validationResult(request);
     if (!errors.isEmpty()) {
@@ -23,11 +29,14 @@ async function parseUserSignup(request, response, next) {
     }
 }
 
+/**
+ * Middleware function that generates JWTs for a user based on provided request body data.
+ * The request body should be raw JSON that includes an "email" and a "password" property.
+ * This function attaches an object containing long-lived and short-lived JWTs to the request.
+ */
 async function parseUserLogin(request, response, next) {
 
 }
-
-
 
 /**
  * Middleware function that expects a JWT as an authorization header bearer token.
@@ -145,9 +154,51 @@ const routeRequiresShortLivedJwtParam = function (request, response, next) {
     })(request, response, next);
 }
 
+/**
+ * Middleware function that should be used as the second step in a middleware chain.
+ * Requires a user object to be attached to the request object, which should be handled by another middleware.
+ * This function creates a new Token document based on the request.user and attaches that new Token to the request object.
+ */
+const createTvLoginToken = async (request, response, next) => {
+    if (!request.user){
+        next(new Error("No user available to generate a TV token for."));
+    }
+
+    let newTvToken = await Token.create({userId: request.user._id, tokenType: 'tv-login'});
+    console.log(`Created TV login token for user: ${JSON.stringify(newTvToken)}`);
+    request.newTvCode = newTvToken.randomToken;
+    next();
+}
+
+/**
+ * Middleware function to find a Token document matching the route param declared as ":code".
+ * This function then generates JWTs for a matching user based on the found Token document.
+ */
+const verifyTvLoginToken = async (request, response, next) => {
+    let providedTvCode = request.params.code;
+
+    let matchingToken = await Token.findOneAndDelete({tokenType:'tv-login', randomToken: providedTvCode}).exec();
+    if (!matchingToken) {
+        next(new Error("Invalid code provided."));
+    }
+
+    let matchingUser = await User.findById(matchingToken.userId).exec();
+    if (!matchingUser){
+        next(new Error("No user found for that code."));
+    }
+
+    request.user = {
+        "_id":matchingUser._id,
+        "email":matchingUser.email,
+        "isEmailVerified":matchingUser.isEmailVerified
+    };
+    request.tokens = generateJwtsForUser(matchingUser);
+    next();
+}
 
 module.exports = {
 	parseUserSignup, parseUserLogin,
 	routeRequiresLongLivedJwtHeader, routeRequiresShortLivedJwtHeader,
-	routeRequiresLongLivedJwtParam, routeRequiresShortLivedJwtParam
+	routeRequiresLongLivedJwtParam, routeRequiresShortLivedJwtParam,
+    createTvLoginToken, verifyTvLoginToken
 }
