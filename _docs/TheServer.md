@@ -8,8 +8,9 @@ This backend microservice is intended to be used by a variety of frontends, as w
 
 As an example of an authentication microservice in the real world, look to Blizzard and their Battle.Net system. Basically, they have a variety of games and websites all powered by a variety of backends. However, users only need one account to access those various things.
 
-If you want to write on the Blizzard web forums, you need to use an account in the Blizzard account system, with your forum posts tied to that account.
-If you want to purchase a Blizzard videogame, you need to use an account in the Blizzard account system, with your game ownership, achievements and other game data tied to that account.
+- If you want to write on the Blizzard web forums, you need to use an account in the Blizzard account system, with your forum posts tied to that account.
+- If you want to purchase a Blizzard videogame, you need to use an account in the Blizzard account system, with your game ownership, achievements and other game data tied to that account.
+
 The accounts in both scenarios are the same, one account. 
 
 This is because the account system is a standalone system, used by multiple other applications.
