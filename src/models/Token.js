@@ -31,22 +31,22 @@ const tokenSchema = new Schema({
 // such as checking the database to make sure the new token value isn't already in use.
 tokenSchema.pre('save', async function(next){
 
-    // randomToken temporary variable declared before we start doing any looping stuff:
+	// randomToken temporary variable declared before we start doing any looping stuff:
 	let tokenResult = '';
 
-    // Some loops don't handle async very well as per:
-    // https://zellwk.com/blog/async-await-in-loops/
-    // so we should use a while loop with a flag value in this function.
-    let tokenIsUnused = false;
+	// Some loops don't handle async very well as per:
+	// https://zellwk.com/blog/async-await-in-loops/
+	// so we should use a while loop with a flag value in this function.
+	let tokenIsUnused = false;
 	while (!tokenIsUnused){
 
-        // Different code logic for different token types:
-        // Email verification codes aren't meant to be entered by humans in this API,
-        // so they can contain any alphanumeric character.
-        // TV login codes ARE meant to be entered by humans, 
-        // so we should use only alphanumberic characters that don't get easily
-        // mistaken for different alphanumeric characters if the frontend uses a dumb font.
-        // eg. 0, O. 1, I, l.
+		// Different code logic for different token types:
+		// Email verification codes aren't meant to be entered by humans in this API,
+		// so they can contain any alphanumeric character.
+		// TV login codes ARE meant to be entered by humans, 
+		// so we should use only alphanumberic characters that don't get easily
+		// mistaken for different alphanumeric characters if the frontend uses a dumb font.
+		// eg. 0, O. 1, I, l.
 
 		if (this.tokenType == 'tv-login'){
 			// Should obey convention for download codes eg.
@@ -62,17 +62,17 @@ tokenSchema.pre('save', async function(next){
 			}
 		} else {
 			// Otherwise just generate a decently hard-to-guess string.
-            // 4 bytes = 8 characters in hex format.
+			// 4 bytes = 8 characters in hex format.
 			tokenResult = crypto.randomBytes(4).toString('hex');
 		}
-        // If token value is available, break the while loop.
+		// If token value is available, break the while loop.
 		let existingToken = await Token.findOne({randomToken: tokenResult}).exec();
 		if (!existingToken){
 			tokenIsUnused = true;
 		}
 	}
 
-    // If we reached this point in the pre-save hook, the token value is safe to assign to the document.
+	// If we reached this point in the pre-save hook, the token value is safe to assign to the document.
 	this.randomToken = tokenResult;
 	next();
 });
