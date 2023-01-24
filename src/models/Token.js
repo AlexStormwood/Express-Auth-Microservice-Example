@@ -29,7 +29,7 @@ const tokenSchema = new Schema({
 // However, default values that come from functions must use synchronous functions.
 // MongooseJS pre-hooks allow you to do asynchronous stuff, 
 // such as checking the database to make sure the new token value isn't already in use.
-tokenSchema.pre('save', async function(){
+tokenSchema.pre('save', async function(next){
 
     // randomToken temporary variable declared before we start doing any looping stuff:
 	let tokenResult = '';
@@ -74,6 +74,7 @@ tokenSchema.pre('save', async function(){
 
     // If we reached this point in the pre-save hook, the token value is safe to assign to the document.
 	this.randomToken = tokenResult;
+	next();
 });
 
 // After the Schema has been configured, use it to create a Model.
