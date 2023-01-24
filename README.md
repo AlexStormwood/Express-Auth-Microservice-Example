@@ -15,6 +15,7 @@ It shows you the exact code and settings needed to create a production-ready ser
 ## TODO
 
 - `src/controllers/middleware/AuthMiddleware.js` 
+	- parseUserSignup function - needs to actually get email & password from the request body as per the original BigfootDS API code
 	- parseUserLogin function - needs to be written to read body data and return JWTs
 	- routeRequiresLongLivedJwtParam - needs to be rewritten to not use PassportJS
 	- routeRequiresLongLivedJwtParam - needs to be rewritten to not use PassportJS
